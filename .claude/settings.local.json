@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(./venv/bin/pip install *)",
+      "Bash(./venv/bin/python3 *)",
+      "Bash(2>&1)",
+      "Bash(curl -s http://localhost:8000/api/dashboard-summary)",
+      "Bash(curl -s \"http://localhost:8000/api/signals?days=7&strength=HIGH\")",
+      "Bash(curl -s \"http://localhost:8000/api/fii-dii?days=7\")",
+      "Bash(curl -s \"http://localhost:8000/api/signals?days=7&strength=HIGH,MEDIUM&limit=5\")",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(pkill -f \"uvicorn api:app\")",
+      "Bash(curl -s \"http://localhost:8000/api/signals?days=30&limit=3\")",
+      "Bash(curl -s \"http://localhost:8000/api/stock-news/TCS\")",
+      "Bash(open http://localhost:8000)",
+      "Bash(curl -s \"http://127.0.0.1:8765/api/clusters?tier=ELITE&days=30\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Count: {len\\(d\\)}'\\); [print\\(f'  {r[\\\\\"symbol\\\\\"]:15} score={r[\\\\\"cluster_score\\\\\"]} tier={r[\\\\\"cluster_tier\\\\\"]} sources={r[\\\\\"sources_hit\\\\\"]}'\\) for r in d[:4]]\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/api/promoter-streaks?min_insiders=3\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Count: {len\\(d\\)}'\\); [print\\(f'  {r[\\\\\"symbol\\\\\"]:15} insiders={r[\\\\\"distinct_insiders\\\\\"]} strength={r[\\\\\"streak_strength\\\\\"]}'\\) for r in d[:4]]\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/api/fundamentals/TCS\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'sector={d.get\\(\\\\\"sector\\\\\"\\)} mktcap={d.get\\(\\\\\"market_cap_cr\\\\\"\\)} roce5y={d.get\\(\\\\\"roce_5yr_avg\\\\\"\\)} tier={d.get\\(\\\\\"quality_tier\\\\\"\\)}'\\)\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/api/stock-intelligence?days=30&min_cluster_score=30\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Count: {len\\(d\\)}'\\); [print\\(f'  {r.get\\(\\\\\"symbol\\\\\",\\\\\"?\\\\\"\\):15} cluster={r.get\\(\\\\\"cluster_score\\\\\"\\)} quality={r.get\\(\\\\\"quality_tier\\\\\"\\)}'\\) for r in d[:4]]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.items\\(\\) if k not in ['id','source','fetched_at','red_flags']}, indent=2\\)\\)\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/api/stock-intelligence?days=30&min_cluster_score=50\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Total: {len\\(d\\)}'\\); [print\\(f'  {r.get\\(\\\\\"symbol\\\\\",\\\\\"?\\\\\"\\):15} cluster={r.get\\(\\\\\"cluster_score\\\\\"\\)} quality_tier={r.get\\(\\\\\"quality_tier\\\\\"\\)} roce5y={r.get\\(\\\\\"roce_5yr_avg\\\\\"\\)} sector={r.get\\(\\\\\"sector\\\\\"\\)}'\\) for r in d[:8] if r.get\\('quality_tier'\\)]\")"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "code-review-graph"
+  ],
+  "enableAllProjectMcpServers": true
+}
