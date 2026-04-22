@@ -3,3 +3,20 @@
 .env
 challenges.md
 new_req.md
+# db
+*.db
+*.db-shm
+*.db-wal
+
+# claude
+.claude/
+.mcp.json
+CLAUDE.md
+
+# system
+.DS_Store
+
+# python
+__pycache__/
+*.pyc
+venv/
