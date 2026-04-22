@@ -452,56 +452,254 @@ def compute_cluster_score(symbol: str, window_days: int = 30) -> Optional[Dict]:
 
 def refresh_cluster_table(window_days: int = 30) -> int:
     """
-    Recompute clusters for all recently-signalled symbols and upsert
-    results into signal_clusters.
+    Recompute clusters for all recently-signalled symbols and upsert results
+    into signal_clusters.
+
+    Bulk-fetches all signal data in a small number of queries (not per-symbol),
+    computes scores in Python, then batch-inserts — minimises HTTP round-trips
+    to Turso (or any remote DB).
 
     Returns the number of clusters stored (score >= CLUSTER_MIN_SCORE).
     """
     init_db()
-    symbols = get_symbols_with_recent_signals(window_days=window_days)
-    logger.info("Computing clusters for %d symbols (window=%d days)", len(symbols), window_days)
+    cutoff = _window_cutoff(window_days)
+    today = _today_str()
+    logger.info("Computing clusters (window=%d days, cutoff=%s)", window_days, cutoff)
 
-    stored = 0
+    # --- Bulk fetch all signal data in 4 queries ---
+    valid_modes_list = list(VALID_BUY_MODES)
+    valid_modes_placeholders = ",".join("?" * len(valid_modes_list))
+
+    insider_rows = query(
+        f"""
+        SELECT symbol, person_category, transaction_type,
+               COALESCE(value, 0) AS value,
+               COALESCE(disclosure_date, trade_from_date) AS sig_date,
+               company_name
+        FROM insider_trades
+        WHERE UPPER(transaction_type) = 'BUY'
+          AND (
+              mode_of_acquisition IN ({valid_modes_placeholders})
+              OR mode_of_acquisition IS NULL
+              OR TRIM(mode_of_acquisition) = ''
+          )
+          AND date(COALESCE(disclosure_date, trade_from_date)) >= date(?)
+        """,
+        tuple(valid_modes_list) + (cutoff,),
+    )
+
+    sast_rows = query(
+        """
+        SELECT symbol, holding_before_pct, holding_after_pct,
+               disclosure_date AS sig_date, company_name
+        FROM sast_disclosures
+        WHERE date(disclosure_date) >= date(?)
+        """,
+        (cutoff,),
+    )
+
+    deal_rows = query(
+        """
+        SELECT symbol, deal_type, COALESCE(value, 0) AS value,
+               deal_date AS sig_date, company_name
+        FROM bulk_block_deals
+        WHERE UPPER(buy_sell) = 'BUY'
+          AND date(deal_date) >= date(?)
+        """,
+        (cutoff,),
+    )
+
+    mf_rows = query(
+        """
+        SELECT symbol, mf_pct, quarter
+        FROM shareholding_patterns
+        ORDER BY symbol, quarter DESC
+        """,
+    )
+
+    streak_rows = query(
+        """
+        SELECT symbol, streak_strength FROM promoter_streaks
+        ORDER BY symbol, computed_at DESC
+        """,
+    )
+
+    # --- Index streak multiplier by symbol (latest row wins) ---
+    streak_map: Dict[str, str] = {}
+    for r in streak_rows:
+        sym = r["symbol"]
+        if sym not in streak_map:
+            streak_map[sym] = r["streak_strength"]
+
+    # --- Index MF accumulation by symbol ---
+    mf_by_sym: Dict[str, list] = {}
+    for r in mf_rows:
+        mf_by_sym.setdefault(r["symbol"], []).append(r)
+
+    mf_accum_syms: set = set()
+    for sym, records in mf_by_sym.items():
+        records.sort(key=lambda x: x["quarter"], reverse=True)
+        if len(records) >= 2:
+            latest = records[0]["mf_pct"]
+            prev = records[1]["mf_pct"]
+            if latest is not None and prev is not None:
+                if (float(latest) - float(prev)) >= 1.0:
+                    mf_accum_syms.add(sym)
+
+    # --- Aggregate per symbol ---
+    from collections import defaultdict
+
+    # company_name lookup (first non-null found)
+    company_names: Dict[str, str] = {}
+    for r in insider_rows + sast_rows + deal_rows:
+        sym = r["symbol"]
+        if sym not in company_names and r.get("company_name"):
+            company_names[sym] = r["company_name"]
+
+    # insider aggregation
+    insider_by_sym: Dict[str, Dict] = defaultdict(lambda: {
+        "buy_count": 0, "promoter_score": 0.0, "kmp_score": 0.0,
+        "value": 0.0, "dates": [],
+    })
+    for r in insider_rows:
+        sym = r["symbol"]
+        d = insider_by_sym[sym]
+        d["buy_count"] += 1
+        d["value"] += float(r["value"] or 0)
+        if r["sig_date"]:
+            d["dates"].append(r["sig_date"])
+        cat = (r["person_category"] or "").upper()
+        if "PROMOTER" in cat:
+            d["promoter_score"] += CLUSTER_WEIGHTS["INSIDER_PROMOTER"]
+        else:
+            d["kmp_score"] += CLUSTER_WEIGHTS["INSIDER_KMP"]
+
+    # sast aggregation
+    sast_by_sym: Dict[str, Dict] = defaultdict(lambda: {
+        "count": 0, "score": 0.0, "dates": [],
+    })
+    for r in sast_rows:
+        sym = r["symbol"]
+        d = sast_by_sym[sym]
+        before = float(r["holding_before_pct"] or 0)
+        after = float(r["holding_after_pct"] or 0)
+        if after > before:
+            d["count"] += 1
+            d["score"] += CLUSTER_WEIGHTS["SAST_ACQUISITION"]
+            if r["sig_date"]:
+                d["dates"].append(r["sig_date"])
+
+    # deal aggregation
+    deal_by_sym: Dict[str, Dict] = defaultdict(lambda: {
+        "count": 0, "score": 0.0, "value": 0.0, "dates": [], "has_block": False,
+    })
+    for r in deal_rows:
+        sym = r["symbol"]
+        d = deal_by_sym[sym]
+        d["count"] += 1
+        d["value"] += float(r["value"] or 0)
+        if r["sig_date"]:
+            d["dates"].append(r["sig_date"])
+        dt = (r["deal_type"] or "").upper()
+        if dt == "BLOCK":
+            d["score"] += CLUSTER_WEIGHTS["BLOCK_DEAL_BUY"]
+            d["has_block"] = True
+        else:
+            d["score"] += CLUSTER_WEIGHTS["BULK_DEAL_BUY"]
+
+    # --- Compute cluster score per symbol ---
+    all_symbols = (
+        set(insider_by_sym.keys())
+        | set(sast_by_sym.keys())
+        | set(deal_by_sym.keys())
+        | mf_accum_syms
+    )
+
+    results = []
+    for sym in sorted(all_symbols):
+        ins = insider_by_sym[sym]
+        sas = sast_by_sym[sym]
+        dea = deal_by_sym[sym]
+
+        mf_accumulation = 1 if sym in mf_accum_syms else 0
+        mf_score = CLUSTER_WEIGHTS["MF_ACCUMULATION"] if mf_accumulation else 0.0
+
+        base_score = ins["promoter_score"] + ins["kmp_score"] + sas["score"] + dea["score"] + mf_score
+        if base_score == 0:
+            continue
+
+        sources_hit = []
+        if ins["buy_count"] > 0:
+            sources_hit.append("INSIDER_BUY")
+        if sas["count"] > 0:
+            sources_hit.append("SAST")
+        if dea["count"] > 0:
+            sources_hit.append("BLOCK_DEAL" if dea["has_block"] else "BULK_DEAL")
+        if mf_accumulation:
+            sources_hit.append("MF_ACCUM")
+
+        distinct_source_count = len(sources_hit)
+        multiplier = 1.0
+        if distinct_source_count >= 3:
+            multiplier *= 1.3
+        if streak_map.get(sym) in ("MODERATE", "STRONG", "ELITE"):
+            multiplier *= 1.25
+
+        final_score = min(round(base_score * multiplier, 2), 100.0)
+
+        if final_score < CLUSTER_MIN_SCORE:
+            continue
+
+        if final_score >= CLUSTER_ELITE_THRESHOLD:
+            tier = "ELITE"
+        elif final_score >= CLUSTER_HIGH_THRESHOLD:
+            tier = "HIGH"
+        else:
+            tier = "MEDIUM"
+
+        all_dates = ins["dates"] + sas["dates"] + dea["dates"]
+        first_signal_date = min(all_dates) if all_dates else None
+        last_signal_date = max(all_dates) if all_dates else today
+        total_value = ins["value"] + dea["value"]
+
+        results.append((
+            sym,
+            company_names.get(sym),
+            final_score,
+            tier,
+            distinct_source_count,
+            ",".join(sources_hit),
+            ins["buy_count"],
+            sas["count"],
+            dea["count"],
+            mf_accumulation,
+            total_value if total_value else None,
+            first_signal_date,
+            last_signal_date,
+            window_days,
+        ))
+
+    if not results:
+        logger.info("No clusters above threshold.")
+        return 0
+
+    # --- Batch insert all results ---
     with db_conn() as conn:
-        for sym in symbols:
-            try:
-                result = compute_cluster_score(sym, window_days=window_days)
-                if result is None:
-                    continue
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO signal_clusters
-                        (symbol, company_name, cluster_score, cluster_tier,
-                         source_count, sources_hit, insider_buy_count,
-                         sast_count, bulk_block_count, mf_accumulation,
-                         total_transaction_value, first_signal_date,
-                         last_signal_date, window_days)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        result["symbol"],
-                        result["company_name"],
-                        result["cluster_score"],
-                        result["cluster_tier"],
-                        result["source_count"],
-                        result["sources_hit"],
-                        result["insider_buy_count"],
-                        result["sast_count"],
-                        result["bulk_block_count"],
-                        result["mf_accumulation"],
-                        result["total_transaction_value"],
-                        result["first_signal_date"],
-                        result["last_signal_date"],
-                        result["window_days"],
-                    ),
-                )
-                stored += 1
-                logger.debug("Cluster %s: score=%.1f tier=%s", sym, result["cluster_score"], result["cluster_tier"])
-            except Exception as e:
-                logger.error("Error computing cluster for %s: %s", sym, e)
+        conn.executemany(
+            """
+            INSERT OR REPLACE INTO signal_clusters
+                (symbol, company_name, cluster_score, cluster_tier,
+                 source_count, sources_hit, insider_buy_count,
+                 sast_count, bulk_block_count, mf_accumulation,
+                 total_transaction_value, first_signal_date,
+                 last_signal_date, window_days)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            results,
+        )
 
-    logger.info("Stored %d clusters.", stored)
-    return stored
+    logger.info("Stored %d clusters.", len(results))
+    return len(results)
 
 
 # ---------------------------------------------------------------------------

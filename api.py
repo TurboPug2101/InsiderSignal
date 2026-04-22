@@ -231,16 +231,32 @@ def get_dashboard_summary():
     try:
         def scalar(sql, params=()):
             row = conn.execute(sql, params).fetchone()
-            return row[0] if row else 0
+            if row is None:
+                return 0
+            # sqlite3.Row supports index access; _TursoRow is a dict — use first value
+            try:
+                return row[0]
+            except (KeyError, TypeError):
+                return next(iter(row.values()), 0)
 
+        def row_val(row, key):
+            """Get a value from either sqlite3.Row or _TursoRow (dict)."""
+            if row is None:
+                return None
+            try:
+                return row[key]
+            except (KeyError, IndexError):
+                return next(iter(row.values()), None)
+
+        # Use last 2 days to catch latest trading day even if today has no data yet
         today_insider_buys = scalar(
-            "SELECT COUNT(*) FROM insider_trades WHERE UPPER(transaction_type)='BUY' AND date(disclosure_date)=date('now')"
+            "SELECT COUNT(*) FROM insider_trades WHERE UPPER(transaction_type)='BUY' AND date(disclosure_date)>=date('now','-1 days')"
         )
         today_insider_buy_value = scalar(
-            "SELECT COALESCE(SUM(value),0) FROM insider_trades WHERE UPPER(transaction_type)='BUY' AND date(disclosure_date)=date('now')"
+            "SELECT COALESCE(SUM(value),0) FROM insider_trades WHERE UPPER(transaction_type)='BUY' AND date(disclosure_date)>=date('now','-1 days')"
         )
         today_bulk_deals = scalar(
-            "SELECT COUNT(*) FROM bulk_block_deals WHERE date(deal_date)=date('now')"
+            "SELECT COUNT(*) FROM bulk_block_deals WHERE date(deal_date)>=date('now','-1 days')"
         )
         fii_row = conn.execute(
             "SELECT net_value_cr FROM fii_dii_activity WHERE category='FII/FPI' ORDER BY date DESC LIMIT 1"
@@ -259,8 +275,8 @@ def get_dashboard_summary():
             "today_insider_buys": today_insider_buys,
             "today_insider_buy_value": today_insider_buy_value,
             "today_bulk_deals": today_bulk_deals,
-            "fii_net_latest": fii_row[0] if fii_row else None,
-            "dii_net_latest": dii_row[0] if dii_row else None,
+            "fii_net_latest": row_val(fii_row, "net_value_cr"),
+            "dii_net_latest": row_val(dii_row, "net_value_cr"),
             "top_signals": top_signals,
         }
     finally:

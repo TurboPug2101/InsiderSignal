@@ -44,6 +44,25 @@ class _TursoCursor:
         return None
 
 
+def _turso_val(v: dict):
+    """Convert a Turso typed value dict to a Python native type."""
+    t = v.get("type")
+    raw = v.get("value")
+    if t == "null" or raw is None:
+        return None
+    if t == "integer":
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            return raw
+    if t == "float":
+        try:
+            return float(raw)
+        except (ValueError, TypeError):
+            return raw
+    return raw  # text, blob — return as-is
+
+
 class _TursoConn:
     """Talks to Turso via its HTTPS pipeline API — pure Python, no Rust."""
 
@@ -57,15 +76,21 @@ class _TursoConn:
 
     def _send(self, statements: list) -> list:
         """POST a pipeline of statements, return list of result objects."""
+        def _arg(a):
+            if a is None:
+                return {"type": "null"}
+            if isinstance(a, bool):
+                return {"type": "integer", "value": "1" if a else "0"}
+            if isinstance(a, int):
+                return {"type": "integer", "value": str(a)}
+            if isinstance(a, float):
+                return {"type": "float", "value": a}   # Turso float must be a JSON number
+            if isinstance(a, str):
+                return {"type": "text", "value": a}
+            return {"type": "text", "value": str(a)}
+
         payload = {"requests": [
-            {"type": "execute", "stmt": {"sql": sql, "args": [
-                {"type": "text", "value": str(a)} if isinstance(a, str)
-                else {"type": "integer", "value": str(int(a))} if isinstance(a, int)
-                else {"type": "real", "value": str(float(a))} if isinstance(a, float)
-                else {"type": "null"} if a is None
-                else {"type": "text", "value": str(a)}
-                for a in args
-            ]}}
+            {"type": "execute", "stmt": {"sql": sql, "args": [_arg(a) for a in args]}}
             for sql, args in statements
         ] + [{"type": "close"}]}
         r = self._req.post(
@@ -74,6 +99,8 @@ class _TursoConn:
             headers={"Authorization": f"Bearer {self._token}"},
             timeout=30,
         )
+        if not r.ok:
+            logger.error("Turso %s: %s", r.status_code, r.text[:500])
         r.raise_for_status()
         return r.json().get("results", [])
 
@@ -84,7 +111,7 @@ class _TursoConn:
             raise Exception(res.get("error", {}).get("message", "Turso error"))
         inner = res.get("response", {}).get("result", {})
         cols = [c["name"] for c in inner.get("cols", [])]
-        rows = [[v.get("value") for v in r] for r in inner.get("rows", [])]
+        rows = [[_turso_val(v) for v in r] for r in inner.get("rows", [])]
         affected = inner.get("affected_row_count", -1)
         return _TursoCursor(cols, rows, rowcount=affected)
 
