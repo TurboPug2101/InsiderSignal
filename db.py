@@ -61,7 +61,7 @@ class _TursoConn:
             {"type": "execute", "stmt": {"sql": sql, "args": [
                 {"type": "text", "value": str(a)} if isinstance(a, str)
                 else {"type": "integer", "value": str(int(a))} if isinstance(a, int)
-                else {"type": "float", "value": str(float(a))} if isinstance(a, float)
+                else {"type": "real", "value": str(float(a))} if isinstance(a, float)
                 else {"type": "null"} if a is None
                 else {"type": "text", "value": str(a)}
                 for a in args
@@ -92,11 +92,16 @@ class _TursoConn:
         data = list(data)
         if not data:
             return _TursoCursor([], [], rowcount=0)
-        results = self._send([(sql, list(row)) for row in data])
-        affected = sum(
-            r.get("response", {}).get("result", {}).get("affected_row_count", 0)
-            for r in results if r.get("type") != "error"
-        )
+        affected = 0
+        # Batch into chunks of 50 to stay within Turso's request size limits
+        chunk_size = 50
+        for i in range(0, len(data), chunk_size):
+            chunk = data[i:i + chunk_size]
+            results = self._send([(sql, list(row)) for row in chunk])
+            affected += sum(
+                r.get("response", {}).get("result", {}).get("affected_row_count", 0)
+                for r in results if r.get("type") != "error"
+            )
         return _TursoCursor([], [], rowcount=affected)
 
     def executescript(self, script: str):
