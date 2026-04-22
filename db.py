@@ -1,10 +1,92 @@
-"""SQLite schema creation and insert/query helpers."""
+"""SQLite / Turso schema creation and insert/query helpers.
 
+Locally: uses a plain SQLite file (sqlite3 stdlib).
+On Render: uses Turso (hosted libSQL) when TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set.
+The rest of the codebase sees the same interface either way.
+"""
+
+import os
+import re
 import sqlite3
 import logging
 from contextlib import contextmanager
 from dateutil import parser as dateparser
 from config import DB_PATH
+
+# --- Backend selection ---
+TURSO_URL   = os.environ.get("TURSO_DATABASE_URL", "")
+TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
+USE_TURSO   = bool(TURSO_URL and TURSO_TOKEN)
+
+if USE_TURSO:
+    import libsql_experimental as libsql  # type: ignore
+
+
+# ---- Turso compatibility shim ----
+
+class _TursoRow(dict):
+    """Dict-based row so callers can use row['col'] just like sqlite3.Row."""
+
+
+class _TursoCursor:
+    def __init__(self, cursor):
+        self._cur = cursor
+        self._desc = getattr(cursor, "description", None)
+
+    @property
+    def rowcount(self):
+        return getattr(self._cur, "rowcount", -1)
+
+    def _to_row(self, raw):
+        if raw is None:
+            return None
+        if self._desc:
+            return _TursoRow(zip([d[0] for d in self._desc], raw))
+        return _TursoRow(enumerate(raw))
+
+    def fetchall(self):
+        return [self._to_row(r) for r in self._cur.fetchall()]
+
+    def fetchone(self):
+        return self._to_row(self._cur.fetchone())
+
+
+class _TursoConn:
+    """Wraps libsql_experimental so it behaves like sqlite3.Connection."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        cur = self._conn.execute(sql, params)
+        return _TursoCursor(cur)
+
+    def executemany(self, sql, data):
+        cur = self._conn.executemany(sql, data)
+        return _TursoCursor(cur)
+
+    def executescript(self, script):
+        """Split the script into individual statements and execute each."""
+        clean = re.sub(r"--[^\n]*", "", script)   # strip -- comments
+        stmts = [s.strip() for s in clean.split(";") if s.strip()]
+        for stmt in stmts:
+            try:
+                self._conn.execute(stmt)
+            except Exception as e:
+                logger.warning("executescript warning: %s | %.80s", e, stmt)
+        self._conn.commit()
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        try:
+            self._conn.rollback()
+        except Exception:
+            pass
+
+    def close(self):
+        self._conn.close()
 
 
 def to_iso_date(raw: str) -> str:
@@ -26,7 +108,10 @@ def to_iso_date(raw: str) -> str:
 logger = logging.getLogger(__name__)
 
 
-def get_connection() -> sqlite3.Connection:
+def get_connection():
+    if USE_TURSO:
+        conn = libsql.connect(TURSO_URL, auth_token=TURSO_TOKEN)
+        return _TursoConn(conn)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")

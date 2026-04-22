@@ -12,7 +12,7 @@ GROQ_MODEL = "openai/gpt-oss-20b"
 
 # --- Paths ---
 BASE_DIR = Path(__file__).parent
-DB_PATH = BASE_DIR / "smart_money.db"
+DB_PATH = BASE_DIR / "smart_money.db"   # only used locally; Render uses Turso
 
 # --- NSE Base ---
 NSE_BASE_URL = "https://www.nseindia.com"

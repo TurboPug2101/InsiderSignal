@@ -6,7 +6,7 @@
 <title>Smart Money Tracker — Indian Markets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 /* ===== RESET & BASE ===== */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -26,6 +26,81 @@ a{color:inherit;text-decoration:none}
 #last-updated{font-size:12px;color:#9CA3AF}
 .refresh-btn{background:#22C55E;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:background .15s}
 .refresh-btn:hover{background:#16A34A}
+.theme-btn{background:#fff;color:#111827;border:1px solid #E5E7EB;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:background .15s,color .15s,border-color .15s}
+.theme-btn:hover{background:#F3F4F6}
+
+body.dark-mode{background:#0f172a;color:#e2e8eb}
+body.dark-mode .header{background:#111827;border-bottom-color:#1f2937}
+body.dark-mode .nav-tab{color:#cbd5e1}
+body.dark-mode .nav-tab.active{color:#22C55E;border-bottom-color:#22C55E}
+body.dark-mode .header-right button.refresh-btn,
+body.dark-mode .header-right .theme-btn{background:#1f2937;color:#e2e8eb;border-color:#334155}
+body.dark-mode .header-right .theme-btn:hover{background:#334155}
+body.dark-mode .tab-pane{background:none}
+body.dark-mode .stat-card,
+body.dark-mode .fiidii-card,
+body.dark-mode .table-section,
+body.dark-mode .result-card,
+body.dark-mode .result-full,
+body.dark-mode .filter-dropdown,
+body.dark-mode .modal-box,
+body.dark-mode .progress-box,
+body.dark-mode .accordion,
+body.dark-mode .ai-month-box,
+body.dark-mode .intel-filters,
+body.dark-mode .kanban-col,
+body.dark-mode .kcard,
+body.dark-mode .kcard-metrics,
+body.dark-mode .modal-header,
+body.dark-mode .modal-meta span,
+body.dark-mode .fund-item,
+body.dark-mode .timeline-item,
+body.dark-mode .connection-card,
+body.dark-mode .progress-modal{background:#111827;color:#e2e8eb}
+body.dark-mode .table-section,
+body.dark-mode .result-card,
+body.dark-mode .result-full,
+body.dark-mode .filter-dropdown,
+body.dark-mode .modal-box,
+body.dark-mode .progress-box,
+body.dark-mode .accordion,
+body.dark-mode .ai-month-box,
+body.dark-mode .intel-filters,
+body.dark-mode .kanban-col,
+body.dark-mode .kcard,
+body.dark-mode .kcard-metrics,
+body.dark-mode .modal-header,
+body.dark-mode .modal-meta span,
+body.dark-mode .fund-item,
+body.dark-mode .timeline-item,
+body.dark-mode .connection-card,
+body.dark-mode .progress-modal{border-color:#1f2937}
+body.dark-mode .table-section .table-toolbar,
+body.dark-mode .kanban-col-header,
+body.dark-mode .progress-footer,
+body.dark-mode .filter-dropdown label,
+body.dark-mode .accordion-header{color:#e2e8eb}
+body.dark-mode .table-section thead tr{background:#0f172a}
+body.dark-mode tbody tr{border-color:#1f2937}
+body.dark-mode tbody tr:nth-child(even){background:#111827}
+body.dark-mode tbody tr:hover{background:#1e293b}
+body.dark-mode td{color:#e2e8eb}
+body.dark-mode th{color:#cbd5e1}
+body.dark-mode .dash-search-input,
+body.dark-mode .kanban-search-input,
+body.dark-mode .kanban-days-select,
+body.dark-mode .filter-dropdown input,
+body.dark-mode .filter-dropdown select,
+body.dark-mode .intel-filters select,
+body.dark-mode .intel-filters input[type=text],
+body.dark-mode .intel-filters input[type=number],
+body.dark-mode .dash-search-input:focus,
+body.dark-mode .kanban-search-input:focus,
+body.dark-mode .kanban-days-select:focus{background:#111827;border-color:#334155;color:#e2e8eb}
+body.dark-mode .kcard-ticker,
+body.dark-mode .kcard-price,
+body.dark-mode .kmetric-val{color:#e2e8eb}
+body.dark-mode .modal-body{background:transparent}
 
 /* ===== TABS CONTENT ===== */
 .tab-pane{display:none;max-width:1600px;margin:0 auto;padding:24px}
@@ -260,6 +335,96 @@ td.wrap{white-space:normal}
   .tab-pane{padding:16px}
   .fund-grid{grid-template-columns:1fr}
 }
+
+/* ===== DASHBOARD SEARCH BAR ===== */
+.dash-search-wrap{padding:10px 20px 14px;border-bottom:1px solid #F0FDF4}
+.dash-search-input{width:100%;max-width:420px;border:1px solid #E5E7EB;border-radius:8px;padding:8px 14px 8px 36px;font-size:13px;font-family:inherit;background:#F8FBF9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;background-size:16px}
+.dash-search-input:focus{outline:none;border-color:#22C55E;background-color:#fff;box-shadow:0 0 0 3px rgba(34,197,94,.1)}
+
+/* ===== COLUMN HEADER TOOLTIPS ===== */
+th[data-tip]{position:relative}
+th[data-tip]:hover::after{
+  content:attr(data-tip);
+  position:absolute;
+  top:calc(100% + 6px);
+  left:50%;
+  transform:translateX(-50%);
+  background:#1e293b;
+  color:#f1f5f9;
+  padding:9px 13px;
+  border-radius:8px;
+  font-size:12px;
+  white-space:pre-line;
+  min-width:220px;
+  max-width:300px;
+  z-index:999;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+  pointer-events:none;
+  font-weight:400;
+  line-height:1.65;
+  font-family:'Inter',sans-serif;
+  letter-spacing:0;
+  border:1px solid #334155;
+}
+/* prevent tooltip overflow at left edge */
+th[data-tip]:first-child:hover::after{left:0;transform:none}
+th[data-tip]:last-child:hover::after{left:auto;right:0;transform:none}
+
+/* ===== KANBAN BOARD (SIGNALS TAB) ===== */
+#tab-signals{background:#F8FBF9;min-height:calc(100vh - 58px)}
+.kanban-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;flex-wrap:wrap;gap:12px}
+.kanban-title{font-size:18px;font-weight:700;color:#111827;letter-spacing:-.3px}
+.kanban-controls{display:flex;align-items:center;gap:10px}
+.kanban-search-input{border:1px solid #E5E7EB;border-radius:8px;padding:8px 14px 8px 36px;font-size:13px;font-family:'DM Sans','Inter',sans-serif;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;background-size:16px;color:#374151;width:240px;transition:border-color .15s}
+.kanban-search-input::placeholder{color:#94A3AF}
+.kanban-search-input:focus{outline:none;border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.kanban-days-select{background:#fff;border:1px solid #E5E7EB;color:#374151;border-radius:6px;padding:7px 10px;font-size:13px;cursor:pointer}
+.kanban-days-select:focus{outline:none;border-color:#22C55E}
+
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 24px 32px;align-items:start}
+@media(max-width:900px){.kanban-board{grid-template-columns:1fr}}
+
+.kanban-col{background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden}
+.kanban-col-header{display:flex;align-items:center;gap:10px;padding:14px 18px;font-size:13px;font-weight:700;font-family:'DM Sans','Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid #E5E7EB}
+.col-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.strong-header{color:#4ade80}.strong-header .col-dot{background:#4ade80;box-shadow:0 0 8px #4ade8080}
+.moderate-header{color:#fbbf24}.moderate-header .col-dot{background:#fbbf24;box-shadow:0 0 8px #fbbf2480}
+.weak-header{color:#f87171}.weak-header .col-dot{background:#f87171;box-shadow:0 0 8px #f8717180}
+.col-count{margin-left:auto;background:#E5E7EB;border-radius:20px;padding:1px 10px;font-size:12px;font-weight:600;color:#374151}
+
+.kanban-cards{display:flex;flex-direction:column;gap:10px;padding:12px}
+.kanban-empty{color:#4B5563;font-size:13px;padding:24px;text-align:center;font-family:'DM Sans','Inter',sans-serif}
+
+/* Individual Kanban card */
+.kcard{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px 16px;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;border-left-width:3px}
+.kcard:hover{transform:scale(1.025);box-shadow:0 8px 32px rgba(15,23,42,.12);border-color:#D1D5DB}
+.kcard-strong{border-left-color:#4ade80}
+.kcard-moderate{border-left-color:#fbbf24}
+.kcard-weak{border-left-color:#f87171}
+
+.kcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.kcard-ticker{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#111827;letter-spacing:.5px}
+.kcard-name{font-family:'DM Sans','Inter',sans-serif;font-size:12px;color:#6B7280;margin-top:2px}
+.kcard-price{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#111827;text-align:right}
+.k-qual-badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;margin-top:3px;font-family:'DM Sans','Inter',sans-serif}
+.kq-EXCELLENT{background:#14532D;color:#86efac}
+.kq-GOOD{background:#1a3a2a;color:#4ade80}
+.kq-AVERAGE{background:#2d2507;color:#fbbf24}
+.kq-POOR{background:#2d1f0a;color:#fb923c}
+.kq-AVOID{background:#2d1515;color:#f87171}
+
+.kcard-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px}
+.kcard-metric{text-align:center}
+.kmetric-label{font-family:'DM Sans','Inter',sans-serif;font-size:10px;color:#4B5563;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.kmetric-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#111827}
+
+.kcard-pills{display:flex;flex-wrap:wrap;gap:4px}
+.kpill{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'DM Sans','Inter',sans-serif;letter-spacing:.3px}
+.pill-insider{background:#1e3a5f;color:#60a5fa}
+.pill-sast{background:#2e1a5e;color:#a78bfa}
+.pill-block{background:#14432a;color:#34d399}
+.pill-bulk{background:#1f3320;color:#86efac}
+.pill-mf{background:#3b1a3b;color:#e879f9}
 </style>
 </head>
 <body>
@@ -279,6 +444,7 @@ td.wrap{white-space:normal}
     <div class="header-right">
       <span id="last-updated">—</span>
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <button id="theme-toggle-btn" class="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
       <button class="refresh-btn" style="background:#7C3AED;" onclick="openRunAnalysis()">▶ Run Analysis</button>
     </div>
   </div>
@@ -316,34 +482,84 @@ td.wrap{white-space:normal}
         <button class="clear-filters-btn" onclick="clearFilters('dash')">Clear filters</button>
       </div>
     </div>
+    <div class="dash-search-wrap">
+      <input type="text" id="dash-search" class="dash-search-input"
+        placeholder="Search ticker, entity, signal type…"
+        oninput="onDashSearch()"/>
+    </div>
     <div id="dash-table-wrap"></div>
   </div>
 </div>
 
-<!-- =================== SIGNALS TAB =================== -->
+<!-- =================== SIGNALS TAB (KANBAN) =================== -->
 <div id="tab-signals" class="tab-pane">
-  <div class="table-section">
-    <div class="table-toolbar">
-      <h2>All Consolidated Signals</h2>
-      <div class="toolbar-right">
-        <label style="font-size:13px;color:#6B7280">Days:
-          <select class="days-select" id="sig-days" onchange="loadSignalsTab()">
-            <option value="7">7d</option>
-            <option value="14">14d</option>
-            <option value="30" selected>30d</option>
-            <option value="60">60d</option>
-            <option value="90">90d</option>
-          </select>
-        </label>
-        <button class="clear-filters-btn" onclick="clearFilters('sig')">Clear filters</button>
-      </div>
+  <div class="kanban-header">
+    <div>
+      <div class="kanban-title">Signal Intelligence Board</div>
+      <div style="font-size:12px;color:#4B5563;margin-top:3px;font-family:'DM Sans','Inter',sans-serif">Click any card to view gauge fundamentals. Grouped by conviction tier.</div>
     </div>
-    <div id="sig-table-wrap"></div>
+    <div class="kanban-controls">
+      <input type="text" id="kanban-search" class="kanban-search-input" placeholder="Search ticker or company…" oninput="filterKanban()"/>
+      <select id="kanban-days" class="kanban-days-select" onchange="loadKanban()">
+        <option value="7">7d</option>
+        <option value="14">14d</option>
+        <option value="30" selected>30d</option>
+        <option value="60">60d</option>
+        <option value="90">90d</option>
+      </select>
+    </div>
+  </div>
+  <div class="kanban-board">
+    <div class="kanban-col">
+      <div class="kanban-col-header strong-header">
+        <span class="col-dot"></span>STRONG
+        <span class="col-count" id="kanban-count-STRONG">0</span>
+      </div>
+      <div class="kanban-cards" id="kanban-cards-STRONG"><div class="kanban-empty">Loading…</div></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-header moderate-header">
+        <span class="col-dot"></span>MODERATE
+        <span class="col-count" id="kanban-count-MODERATE">0</span>
+      </div>
+      <div class="kanban-cards" id="kanban-cards-MODERATE"><div class="kanban-empty">Loading…</div></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-header weak-header">
+        <span class="col-dot"></span>WEAK
+        <span class="col-count" id="kanban-count-WEAK">0</span>
+      </div>
+      <div class="kanban-cards" id="kanban-cards-WEAK"><div class="kanban-empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== GAUGE MODAL =================== -->
+<div id="gauge-modal" class="modal-overlay" onclick="if(this===event.target)closeGaugeModal()">
+  <div class="modal-box" style="max-width:700px;background:#FAFAFA;border:1px solid #E5E5E5">
+    <div class="modal-header" style="background:#FFFFFF;border-bottom:1px solid #E5E5E5">
+      <h2 id="gauge-title" style="color:#111;font-family:'JetBrains Mono',monospace;font-size:16px"></h2>
+      <button class="modal-close" onclick="closeGaugeModal()" style="color:#888">✕</button>
+    </div>
+    <div class="modal-body" id="gauge-body" style="background:#FAFAFA;padding:26px 30px 34px"></div>
   </div>
 </div>
 
 <!-- =================== STOCK INTELLIGENCE TAB =================== -->
 <div id="tab-intelligence" class="tab-pane">
+
+  <!-- Prominent search bar -->
+  <div style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+    <div style="position:relative;flex:1;max-width:440px">
+      <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="intel-symbol" placeholder="Search by ticker or company name…"
+        style="width:100%;border:2px solid #E5E7EB;border-radius:10px;padding:10px 14px 10px 38px;font-size:14px;font-family:inherit;background:#F8FBF9;transition:border-color .15s,box-shadow .15s"
+        onfocus="this.style.borderColor='#22C55E';this.style.boxShadow='0 0 0 3px rgba(34,197,94,.12)';this.style.background='#fff'"
+        onblur="this.style.borderColor='#E5E7EB';this.style.boxShadow='none';this.style.background='#F8FBF9'"
+        oninput="filterIntelTable()"/>
+    </div>
+    <span style="font-size:12px;color:#9CA3AF;white-space:nowrap">or filter below ↓</span>
+  </div>
 
   <!-- Filters -->
   <div class="intel-filters">
@@ -366,11 +582,8 @@ td.wrap{white-space:normal}
         <option value="AVOID">AVOID</option>
       </select>
     </label>
-    <label>Min Cluster Score:
-      <input type="number" id="intel-minscore" value="30" min="0" max="100" style="width:70px" onchange="loadIntelligence()"/>
-    </label>
-    <label>Symbol:
-      <input type="text" id="intel-symbol" placeholder="e.g. TCS" style="width:100px" oninput="filterIntelTable()"/>
+    <label>Min Score:
+      <input type="number" id="intel-minscore" value="30" min="0" max="100" style="width:64px" onchange="loadIntelligence()"/>
     </label>
     <label><input type="checkbox" id="intel-streak" onchange="filterIntelTable()"/> Has streak</label>
     <label><input type="checkbox" id="intel-elite" onchange="filterIntelTable()"/> ELITE only</label>
@@ -456,7 +669,7 @@ function switchTab(name, el) {
   pane.classList.add('active');
   if (el) el.classList.add('active');
   if (typeof closeFilterDropdown === 'function') closeFilterDropdown();
-  if (name === 'signals' && state.sig.data.length === 0) loadSignalsTab();
+  if (name === 'signals' && kanbanData.length === 0) loadKanban();
   if (name === 'intelligence') {
     if (intelData.length === 0) loadIntelligence();
     if (!window.Chart) {
@@ -465,6 +678,30 @@ function switchTab(name, el) {
       document.head.appendChild(s);
     }
   }
+}
+
+function updateThemeButton() {
+  const btn = document.getElementById('theme-toggle-btn');
+  if (!btn) return;
+  if (document.body.classList.contains('dark-mode')) {
+    btn.textContent = '☀️ Light mode';
+    btn.setAttribute('aria-label', 'Switch to light mode');
+  } else {
+    btn.textContent = '🌙 Dark mode';
+    btn.setAttribute('aria-label', 'Switch to dark mode');
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  updateThemeButton();
+}
+
+function initTheme() {
+  const theme = localStorage.getItem('theme') || 'light';
+  document.body.classList.toggle('dark-mode', theme === 'dark');
+  updateThemeButton();
 }
 
 // ===== FORMATTING =====
@@ -545,15 +782,15 @@ async function loadFiiDii() {
 
 // ===== GENERIC TABLE RENDERER =====
 const SIGNAL_COLS = [
-  { key:'signal_date',   label:'Date',        type:'date' },
-  { key:'symbol',        label:'Symbol',      type:'text' },
-  { key:'signal_type',   label:'Signal',      type:'category' },
-  { key:'entity_name',   label:'Entity',      type:'text', wrap:true },
-  { key:'entity_type',   label:'Category',    type:'category' },
-  { key:'action',        label:'Action',      type:'category' },
-  { key:'value_inr',     label:'Value',       type:'number' },
-  { key:'quantity',      label:'Quantity',    type:'number' },
-  { key:'signal_strength', label:'Strength',  type:'category' },
+  { key:'signal_date',   label:'Date',     type:'date',     tip:'Date the filing was disclosed to the stock exchange' },
+  { key:'symbol',        label:'Symbol',   type:'text',     tip:'NSE stock ticker symbol' },
+  { key:'signal_type',   label:'Signal',   type:'category', tip:'Signal source:\nINSIDER_BUY — promoter/director bought own shares\nSAST_ACCUMULATION — entity crossed 5%+ stake\nBULK_BLOCK_DEAL — large institutional trade' },
+  { key:'entity_name',   label:'Entity',   type:'text',     tip:'Person or institution behind the filing', wrap:true },
+  { key:'entity_type',   label:'Category', type:'category', tip:'Promoters → highest conviction signal\nKMP (Key Mgmt Personnel) → moderate\nDirector → moderate\nAcquirer → external investor building stake' },
+  { key:'action',        label:'Action',   type:'category', tip:'Buy / Acquisition = bullish\nSell / Disposal = informational (insider sells less predictive than buys)' },
+  { key:'value_inr',     label:'Value',    type:'number',   tip:'Transaction value in ₹\n>₹1 Cr = notable\n>₹10 Cr = high conviction\n>₹50 Cr = institutional scale' },
+  { key:'quantity',      label:'Quantity', type:'number',   tip:'Number of shares traded in this filing' },
+  { key:'signal_strength', label:'Strength', type:'category', tip:'HIGH — Promoter buy >₹1Cr, SAST ≥10%, Block >₹50Cr\nMEDIUM — Any insider buy, SAST 5%+, Bulk buy >₹10Cr\nLOW — KMP buys, small bulk deals\nINFO — Sells/disposals (context only)' },
 ];
 
 function renderTable(tableId, cols, st) {
@@ -561,7 +798,12 @@ function renderTable(tableId, cols, st) {
   if (!wrap) return;
 
   // 1. Apply filters
+  const searchQ = st._search || '';
   let filtered = st.data.filter(row => {
+    if (searchQ) {
+      const hay = [(row.symbol||''),(row.entity_name||''),(row.signal_type||''),(row.action||''),(row.company_name||'')].join(' ').toLowerCase();
+      if (!hay.includes(searchQ)) return false;
+    }
     for (const [col, fv] of Object.entries(st.filters)) {
       const rv = String(row[col] || '').toLowerCase();
       if (fv.type === 'text' && fv.value && !rv.includes(fv.value.toLowerCase())) return false;
@@ -607,7 +849,8 @@ function renderTable(tableId, cols, st) {
     const isSort = st.sort.col === c.key;
     const arrow = isSort ? (st.sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
     const hasFilter = !!st.filters[c.key];
-    thead += `<th>
+    const tipAttr = c.tip ? ` data-tip="${c.tip.replace(/"/g,'&quot;')}"` : '';
+    thead += `<th${tipAttr}>
       <div style="display:inline-flex;align-items:center;gap:4px">
         <span class="th-inner" onclick="toggleSort('${tableId}','${c.key}',event)">
           ${c.label}<span class="sort-icon${isSort?' active':''}">${arrow}</span>
@@ -685,7 +928,11 @@ function setPerPage(tableId, n) {
 }
 function clearFilters(which) {
   const st = state[which === 'dash' ? 'dash' : 'sig'];
-  st.filters = {}; st.page = 1;
+  st.filters = {}; st.page = 1; st._search = '';
+  if (which === 'dash') {
+    const si = document.getElementById('dash-search');
+    if (si) si.value = '';
+  }
   renderTable(which === 'dash' ? 'dash-table' : 'sig-table', SIGNAL_COLS, st);
 }
 
@@ -772,18 +1019,11 @@ async function loadDashTable() {
   }
 }
 
-// ===== LOAD SIGNALS TAB =====
-async function loadSignalsTab() {
-  const days = document.getElementById('sig-days').value;
-  try {
-    const rows = await apiFetch(`/api/signals?days=${days}&limit=500`);
-    state.sig.data = rows;
-    state.sig.sort = { col:'signal_date', dir:'desc' };
-    state.sig.page = 1;
-    renderTable('sig-table', SIGNAL_COLS, state.sig);
-  } catch(e) {
-    document.getElementById('sig-table-wrap').innerHTML = '<div style="padding:30px;text-align:center;color:#9CA3AF">Failed to load signals.</div>';
-  }
+function onDashSearch() {
+  state.dash.page = 1;
+  const q = (document.getElementById('dash-search').value || '').trim().toLowerCase();
+  state.dash._search = q;
+  renderTable('dash-table', SIGNAL_COLS, state.dash);
 }
 
 // ===== DEEP DIVE: navigate from table =====
@@ -963,26 +1203,299 @@ function toggleAccordion(header) {
   body.classList.toggle('open');
 }
 
+// ===== KANBAN BOARD =====
+let kanbanData = [];
+
+const KANBAN_SOURCE_LABELS = {
+  'INSIDER_BUY':'INSIDER BUY','SAST':'SAST','SAST_ACCUMULATION':'SAST',
+  'BLOCK_DEAL':'BLOCK DEAL','BULK_DEAL':'BULK DEAL','MF_ACCUMULATION':'MF'
+};
+const KANBAN_SOURCE_CLASS = {
+  'INSIDER_BUY':'pill-insider','SAST':'pill-sast','SAST_ACCUMULATION':'pill-sast',
+  'BLOCK_DEAL':'pill-block','BULK_DEAL':'pill-bulk','MF_ACCUMULATION':'pill-mf'
+};
+
+function tierToConviction(tier) {
+  if (!tier) return 'WEAK';
+  if (tier === 'ELITE') return 'STRONG';
+  if (tier === 'HIGH')  return 'MODERATE';
+  return 'WEAK';
+}
+
+async function loadKanban() {
+  const days = document.getElementById('kanban-days')?.value || 30;
+  ['STRONG','MODERATE','WEAK'].forEach(c => {
+    document.getElementById('kanban-cards-'+c).innerHTML = '<div class="kanban-empty">Loading…</div>';
+    document.getElementById('kanban-count-'+c).textContent = '0';
+  });
+  try {
+    kanbanData = await apiFetch(`/api/stock-intelligence?days=${days}&min_cluster_score=20`);
+    renderKanban();
+  } catch(e) {
+    ['STRONG','MODERATE','WEAK'].forEach(c => {
+      document.getElementById('kanban-cards-'+c).innerHTML = '<div class="kanban-empty" style="color:#f87171">Failed to load</div>';
+    });
+  }
+}
+
+function filterKanban() { renderKanban(); }
+
+function renderKanban() {
+  const q = (document.getElementById('kanban-search')?.value || '').trim().toUpperCase();
+  let rows = kanbanData;
+  if (q) rows = rows.filter(r =>
+    (r.symbol||'').toUpperCase().includes(q) ||
+    (r.company_name||'').toUpperCase().includes(q)
+  );
+  const groups = { STRONG:[], MODERATE:[], WEAK:[] };
+  rows.forEach(r => groups[tierToConviction(r.cluster_tier)].push(r));
+
+  ['STRONG','MODERATE','WEAK'].forEach(conv => {
+    document.getElementById('kanban-count-'+conv).textContent = groups[conv].length;
+    const el = document.getElementById('kanban-cards-'+conv);
+    if (!groups[conv].length) {
+      el.innerHTML = '<div class="kanban-empty">No signals</div>'; return;
+    }
+    el.innerHTML = groups[conv].map(r => buildKCard(r, conv)).join('');
+  });
+}
+
+function buildKCard(r, conviction) {
+  const sources = (r.sources_hit||'').split(',').filter(Boolean);
+  const pills = sources.map(s => {
+    const key = s.trim();
+    const lbl = KANBAN_SOURCE_LABELS[key] || key.replace(/_/g,' ');
+    const cls = KANBAN_SOURCE_CLASS[key] || 'pill-mf';
+    return `<span class="kpill ${cls}">${lbl}</span>`;
+  }).join('');
+
+  const price = r.current_price != null ? `₹${parseFloat(r.current_price).toLocaleString('en-IN',{maximumFractionDigits:1})}` : '—';
+  const score = r.cluster_score != null ? parseFloat(r.cluster_score).toFixed(0) : '—';
+  const roce  = r.roce_5yr_avg  != null ? parseFloat(r.roce_5yr_avg).toFixed(1)+'%' : '—';
+  const pe    = r.pe_current    != null ? parseFloat(r.pe_current).toFixed(1)+'x' : '—';
+  const qt    = r.quality_tier  || '';
+  const qualBadge = qt ? `<span class="k-qual-badge kq-${qt}">${qt}</span>` : '';
+  const stk   = r.promoter_streak_strength;
+  const stkHtml = stk ? `<span style="font-size:10px;font-family:'DM Sans','Inter',sans-serif;color:#94a3b8;margin-top:2px;display:block">Streak: ${stk}</span>` : '';
+
+  return `<div class="kcard kcard-${conviction.toLowerCase()}" onclick="openGaugeModal('${r.symbol}')">
+    <div class="kcard-top">
+      <div>
+        <div class="kcard-ticker">${r.symbol}</div>
+        <div class="kcard-name">${(r.company_name||'').slice(0,26)}${(r.company_name||'').length>26?'…':''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="kcard-price">${price}</div>
+        ${qualBadge}
+        ${stkHtml}
+      </div>
+    </div>
+    <div class="kcard-metrics">
+      <div class="kcard-metric"><div class="kmetric-label">Score</div><div class="kmetric-val">${score}</div></div>
+      <div class="kcard-metric"><div class="kmetric-label">ROCE</div><div class="kmetric-val">${roce}</div></div>
+      <div class="kcard-metric"><div class="kmetric-label">P/E</div><div class="kmetric-val">${pe}</div></div>
+    </div>
+    ${pills ? `<div class="kcard-pills">${pills}</div>` : ''}
+  </div>`;
+}
+
+// ===== GAUGE FUNDAMENTALS MODAL =====
+async function openGaugeModal(symbol) {
+  const modal = document.getElementById('gauge-modal');
+  const body  = document.getElementById('gauge-body');
+  document.getElementById('gauge-title').textContent = symbol + ' — Fundamentals';
+  body.innerHTML = '<div style="color:#4B5563;padding:40px;text-align:center;font-family:\'DM Sans\',sans-serif">Loading…</div>';
+  modal.classList.add('open');
+
+  try {
+    const [fund, intel] = await Promise.all([
+      apiFetch(`/api/fundamentals/${symbol}`).catch(() => null),
+      Promise.resolve(kanbanData.find(r => r.symbol === symbol) || null),
+    ]);
+    body.innerHTML = buildGaugeHTML(symbol, fund, intel);
+    // Animate gauge bars after a tick
+    requestAnimationFrame(() => animateGaugeBars());
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;padding:20px">Error: ${e.message}</div>`;
+  }
+}
+
+function closeGaugeModal() {
+  document.getElementById('gauge-modal').classList.remove('open');
+}
+
+/* Zone definitions: [max_val, label, fill_color, track_bg_tint]
+   Colors tuned for light #FAFAFA background — deeper shades for readability */
+const GAUGE_DEFS = {
+  cluster_score: {
+    label:'Conviction Score', unit:'', max:100,
+    zones:[[30,'Weak','#EF4444','rgba(239,68,68,.08)'],[50,'Moderate','#F59E0B','rgba(245,158,11,.08)'],[75,'High','#3B82F6','rgba(59,130,246,.08)'],[100,'ELITE','#16A34A','rgba(22,163,74,.1)']]
+  },
+  roce_5yr_avg: {
+    label:'ROCE 5yr Avg', unit:'%', max:50,
+    zones:[[10,'Poor','#EF4444','rgba(239,68,68,.08)'],[20,'Good','#F59E0B','rgba(245,158,11,.08)'],[35,'Great','#16A34A','rgba(22,163,74,.08)'],[50,'Exceptional','#7C3AED','rgba(124,58,237,.08)']]
+  },
+  debt_to_equity: {
+    label:'Debt / Equity', unit:'x', max:4, invert:true,
+    zones:[[0.5,'Conservative','#16A34A','rgba(22,163,74,.08)'],[1.5,'Moderate','#F59E0B','rgba(245,158,11,.08)'],[2.5,'Elevated','#EA580C','rgba(234,88,12,.08)'],[4,'Danger','#EF4444','rgba(239,68,68,.1)']]
+  },
+  interest_coverage: {
+    label:'Interest Coverage', unit:'x', max:20,
+    zones:[[1.5,'Danger','#EF4444','rgba(239,68,68,.08)'],[2.5,'Strained','#EA580C','rgba(234,88,12,.08)'],[5,'Adequate','#F59E0B','rgba(245,158,11,.08)'],[20,'Strong','#16A34A','rgba(22,163,74,.1)']]
+  },
+  pe_current: {
+    label:'P / E Ratio', unit:'x', max:80,
+    zones:[[15,'Cheap','#16A34A','rgba(22,163,74,.08)'],[25,'Fair','#3B82F6','rgba(59,130,246,.08)'],[35,'Pricey','#F59E0B','rgba(245,158,11,.08)'],[80,'Expensive','#EF4444','rgba(239,68,68,.1)']]
+  },
+  promoter_holding_pct: {
+    label:'Promoter Holding', unit:'%', max:100,
+    zones:[[25,'Low','#EF4444','rgba(239,68,68,.08)'],[50,'Moderate','#F59E0B','rgba(245,158,11,.08)'],[65,'Good','#16A34A','rgba(22,163,74,.08)'],[100,'Strong','#7C3AED','rgba(124,58,237,.08)']]
+  },
+  promoter_pledge_pct: {
+    label:'Pledge %', unit:'%', max:100, invert:true,
+    zones:[[10,'Clean','#16A34A','rgba(22,163,74,.08)'],[25,'Caution','#F59E0B','rgba(245,158,11,.08)'],[50,'Risk','#EA580C','rgba(234,88,12,.08)'],[100,'Danger','#EF4444','rgba(239,68,68,.1)']]
+  },
+  fcf_conversion: {
+    label:'FCF Conversion', unit:'%', max:100, scale:100,
+    zones:[[30,'Poor','#EF4444','rgba(239,68,68,.08)'],[60,'Moderate','#F59E0B','rgba(245,158,11,.08)'],[80,'Good','#16A34A','rgba(22,163,74,.08)'],[100,'Excellent','#7C3AED','rgba(124,58,237,.08)']]
+  },
+};
+
+function getZoneColor(def, val) {
+  for (const [limit, , color] of def.zones) {
+    if (val <= limit) return color;
+  }
+  return def.zones[def.zones.length-1][2];
+}
+
+function buildGaugeHTML(symbol, fund, intel) {
+  // Merge data sources
+  const data = Object.assign({}, intel || {}, fund || {});
+
+  // Header metrics
+  const price = data.current_price != null ? `₹${parseFloat(data.current_price).toLocaleString('en-IN',{maximumFractionDigits:1})}` : '—';
+  const mcap  = data.market_cap_cr != null ? `₹${(parseFloat(data.market_cap_cr)/100).toFixed(0)} Cr` : '—';
+  const qt    = data.quality_tier || '';
+  const ct    = data.cluster_tier || '';
+  const conv  = tierToConviction(ct);
+  const convColor = conv==='STRONG'?'#16A34A':conv==='MODERATE'?'#D97706':'#DC2626';
+  const convBg    = conv==='STRONG'?'#F0FDF4':conv==='MODERATE'?'#FFFBEB':'#FEF2F2';
+
+  let html = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px;align-items:center">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#111">${symbol}</div>
+    <div style="font-family:'DM Sans','Inter',sans-serif;font-size:13px;color:#666;flex:1">${(data.company_name||'').slice(0,40)}</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:#333">${price}</div>
+    <span style="background:${convBg};border:1px solid ${convColor}40;color:${convColor};padding:4px 11px;border-radius:6px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">${conv}</span>
+    ${qt ? `<span style="padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0">${qt}</span>` : ''}
+  </div>
+  <div style="display:flex;gap:20px;margin-bottom:22px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid #E5E5E5">
+    <div style="font-size:12px;color:#888;font-family:'DM Sans',sans-serif">Mkt Cap: <span style="color:#333;font-weight:500">${mcap}</span></div>
+    ${data.sector ? `<div style="font-size:12px;color:#888;font-family:'DM Sans',sans-serif">Sector: <span style="color:#333;font-weight:500">${data.sector}</span></div>` : ''}
+    ${data.sales_cagr_5yr != null ? `<div style="font-size:12px;color:#888;font-family:'DM Sans',sans-serif">Sales CAGR 5yr: <span style="color:#333;font-weight:500">${parseFloat(data.sales_cagr_5yr).toFixed(1)}%</span></div>` : ''}
+    ${data.profit_cagr_5yr != null ? `<div style="font-size:12px;color:#888;font-family:'DM Sans',sans-serif">Profit CAGR 5yr: <span style="color:#333;font-weight:500">${parseFloat(data.profit_cagr_5yr).toFixed(1)}%</span></div>` : ''}
+  </div>
+  <div id="gauge-bars" style="display:flex;flex-direction:column;gap:22px">`;
+
+  // Gauge keys to render (skip if value null)
+  const gaugeKeys = ['cluster_score','roce_5yr_avg','pe_current','debt_to_equity','interest_coverage','fcf_conversion','promoter_holding_pct','promoter_pledge_pct'];
+  let idx = 0;
+  gaugeKeys.forEach(key => {
+    let rawVal = data[key];
+    if (rawVal == null) return;
+    const def = GAUGE_DEFS[key]; if (!def) return;
+    let val = parseFloat(rawVal);
+    if (def.scale) val = val * def.scale;
+    val = Math.max(0, val);
+    const pct = Math.min(100, (val / def.max) * 100);
+    const fillColor = getZoneColor(def, val);
+    const displayVal = key === 'fcf_conversion'
+      ? (val.toFixed(0) + def.unit)
+      : (val.toFixed(key==='cluster_score'?0:1) + def.unit);
+
+    // Zone segments
+    let zoneStart = 0;
+    const zoneSegments = def.zones.map(([limit, zlabel, zcolor, zbg]) => {
+      const w = Math.min(limit, def.max) / def.max * 100 - zoneStart;
+      const seg = `<div style="position:absolute;left:${zoneStart}%;width:${w}%;top:0;bottom:0;background:${zbg};border-right:1px solid #E5E5E5"></div>
+        <div style="position:absolute;left:${zoneStart + w/2}%;bottom:-16px;transform:translateX(-50%);font-size:7px;color:${zcolor};opacity:.6;text-transform:uppercase;letter-spacing:.35px;white-space:nowrap;font-family:'DM Sans',sans-serif;font-weight:600">${zlabel}</div>`;
+      zoneStart = Math.min(limit, def.max) / def.max * 100;
+      return seg;
+    }).join('');
+
+    html += `<div data-gauge-pct="${pct}" data-gauge-color="${fillColor}" style="animation-delay:${idx*80}ms">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+        <span style="font-size:12px;color:#666;font-family:'DM Sans','Inter',sans-serif;font-weight:500">${def.label}</span>
+        <span class="gauge-num" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${fillColor}">${displayVal}</span>
+      </div>
+      <div style="position:relative;height:8px;background:#F0F0F0;border-radius:6px;overflow:visible;margin-bottom:20px">
+        ${zoneSegments}
+        <div class="gauge-fill" style="position:absolute;left:0;top:0;height:8px;border-radius:6px;width:0%;transition:width .7s cubic-bezier(.34,1.56,.64,1) ${idx*80}ms;background:${fillColor};box-shadow:0 0 6px ${fillColor}60;z-index:2"></div>
+        <div style="position:absolute;left:${pct}%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:${fillColor};border:2px solid #FFFFFF;box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:3;opacity:0;transition:opacity .3s ${idx*80+500}ms" class="gauge-dot"></div>
+      </div>
+    </div>`;
+    idx++;
+  });
+
+  html += `</div>`;
+
+  // Red flags
+  try {
+    const flags = JSON.parse(data.red_flags || '[]');
+    if (flags.length) {
+      html += `<div style="margin-top:20px;padding:14px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#DC2626;margin-bottom:8px;font-family:'DM Sans',sans-serif;letter-spacing:.5px">⚠ RED FLAGS</div>
+        ${flags.map(f=>`<div style="font-size:12px;color:#B91C1C;padding:3px 0;font-family:'DM Sans',sans-serif">• ${f}</div>`).join('')}
+      </div>`;
+    }
+  } catch(e) {}
+
+  // Signal pills row
+  const sources = (data.sources_hit||'').split(',').filter(Boolean);
+  if (sources.length) {
+    html += `<div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:16px;border-top:1px solid #E5E5E5">
+      <span style="font-size:11px;color:#888;font-family:'DM Sans',sans-serif;margin-right:2px">Active signals:</span>
+      ${sources.map(s=>{
+        const key=s.trim();
+        const lbl=KANBAN_SOURCE_LABELS[key]||key.replace(/_/g,' ');
+        const cls=KANBAN_SOURCE_CLASS[key]||'pill-mf';
+        return `<span class="kpill ${cls}">${lbl}</span>`;
+      }).join('')}
+    </div>`;
+  }
+
+  return html;
+}
+
+function animateGaugeBars() {
+  const fills = document.querySelectorAll('#gauge-body .gauge-fill');
+  fills.forEach(el => {
+    const pct = el.closest('[data-gauge-pct]')?.dataset.gaugePct || 0;
+    el.style.width = pct + '%';
+  });
+  const dots = document.querySelectorAll('#gauge-body .gauge-dot');
+  dots.forEach(el => { el.style.opacity = '1'; });
+}
+
 // ===== INTELLIGENCE TAB =====
 let intelData = [];
 let intelSort = { col: 'cluster_score', dir: 'desc' };
 
 const INTEL_COLS = [
-  { key: 'symbol',                  label: 'Symbol' },
-  { key: 'company_name',            label: 'Company' },
-  { key: 'latest_signal_date',      label: 'Latest Signal' },
-  { key: 'cluster_score',           label: 'Cluster Score' },
-  { key: 'sources_hit',             label: 'Sources' },
-  { key: 'quality_tier',            label: 'Quality' },
-  { key: 'roce_5yr_avg',            label: 'ROCE 5y' },
-  { key: 'debt_to_equity',          label: 'D/E' },
-  { key: 'interest_coverage',       label: 'Int Cov' },
-  { key: 'fcf_conversion',          label: 'FCF Conv' },
-  { key: 'pe_current',              label: 'PE' },
-  { key: 'promoter_holding_pct',    label: 'Prom%' },
-  { key: 'promoter_pledge_pct',     label: 'Pledge%' },
-  { key: 'promoter_streak_strength',label: 'Streak' },
-  { key: 'red_flags',               label: 'Red Flags' },
+  { key: 'symbol',                  label: 'Symbol',     tip: 'NSE stock ticker' },
+  { key: 'company_name',            label: 'Company',    tip: 'Full company name' },
+  { key: 'latest_signal_date',      label: 'Last Signal',tip: 'How recently a regulatory filing was detected for this stock — recency increases signal reliability' },
+  { key: 'cluster_score',           label: 'Score',      tip: 'Conviction score 0–100\nWeighted from signal types + streak multiplier\n>70 = ELITE  >50 = HIGH  >30 = MEDIUM\nHigher = more institutional interest' },
+  { key: 'sources_hit',             label: 'Sources',    tip: 'Signal sources detected:\nI = Insider trade\nS = SAST (5%+ stake)\nB = Block deal\nBk = Bulk deal\nM = MF accumulation\nMore sources = higher conviction' },
+  { key: 'quality_tier',            label: 'Quality',    tip: 'Fundamental quality tier\nEXCELLENT — ROCE>20%, clean balance sheet\nGOOD — solid across most metrics\nAVERAGE — mixed\nPOOR — weak\nAVOID — fails critical checks (D/E>2.5, pledge>50%, IC<1.5)' },
+  { key: 'roce_5yr_avg',            label: 'ROCE 5y',    tip: 'Return on Capital Employed (5yr avg)\nMeasures capital efficiency\n>20% = excellent\n10–20% = good\n<10% = poor\nBusiness quality benchmark — prefer >15%' },
+  { key: 'debt_to_equity',          label: 'D/E',        tip: 'Debt-to-Equity ratio\n<0.5 = conservative (ideal)\n0.5–1.5 = acceptable\n>1.5 = elevated risk\n>2.5 = AVOID (red flag)\nLower is safer' },
+  { key: 'interest_coverage',       label: 'Int Cov',    tip: 'EBIT ÷ Interest expense\nHow easily debt is serviced\n>5x = strong\n2.5–5x = adequate\n<2.5x = strained (red flag)\n<1.5x = AVOID — risk of default' },
+  { key: 'fcf_conversion',          label: 'FCF%',       tip: 'Free Cash Flow ÷ Net Profit\nMeasures earnings quality\n>70% = strong cash conversion\n30–70% = moderate\n<30% = poor (accounting earnings ≠ cash)' },
+  { key: 'pe_current',              label: 'P/E',        tip: 'Price-to-Earnings ratio\n( ) = P/E vs own 5yr median\nLower vs peers = potentially cheap\n>1.5x own median = expensive vs history\nContext-dependent — compare within sector' },
+  { key: 'promoter_holding_pct',    label: 'Prom%',      tip: 'Promoter shareholding %\n>50% = strong skin-in-game alignment\n25–50% = moderate\n<25% = low — less aligned\nRising trend = bullish signal' },
+  { key: 'promoter_pledge_pct',     label: 'Pledge%',    tip: 'Promoter shares pledged as debt collateral\n0% = cleanest possible\n<10% = acceptable\n>25% = elevated risk\n>50% = AVOID — forced-selling risk if stock falls' },
+  { key: 'promoter_streak_strength',label: 'Streak',     tip: 'Consecutive months of promoter open-market buys\nELITE — 6+ months buying\nSTRONG — 4–5 months\nMODERATE — 2–3 months\nWEAK — 1 month\nStreaks = promoters have conviction at current price' },
+  { key: 'red_flags',               label: 'Flags',      tip: 'Critical warning flags — any flag warrants extra diligence before acting on signals. Click to expand list.' },
 ];
 
 async function loadIntelligence() {
@@ -1051,7 +1564,8 @@ function renderIntelTable() {
   thead.innerHTML = INTEL_COLS.map(c => {
     const isSort = intelSort.col === c.key;
     const arrow = isSort ? (intelSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
-    return `<th onclick="intelSort_('${c.key}')" style="cursor:pointer;user-select:none">
+    const tipAttr = c.tip ? ` data-tip="${c.tip.replace(/"/g,'&quot;')}"` : '';
+    return `<th onclick="intelSort_('${c.key}')" style="cursor:pointer;user-select:none"${tipAttr}>
       ${c.label}<span style="color:${isSort?'#22C55E':'#9CA3AF'};font-size:11px">${arrow}</span>
     </th>`;
   }).join('');
@@ -1433,6 +1947,7 @@ function closeProgressModal() {
 }
 
 // ===== INIT =====
+initTheme();
 loadAll();
 
 // Chart.js is loaded lazily inside switchTab() when the intelligence tab is first opened.
