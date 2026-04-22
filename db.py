@@ -18,75 +18,104 @@ TURSO_URL   = os.environ.get("TURSO_DATABASE_URL", "")
 TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
 USE_TURSO   = bool(TURSO_URL and TURSO_TOKEN)
 
-if USE_TURSO:
-    import libsql  # type: ignore
 
-
-# ---- Turso compatibility shim ----
+# ---- Turso HTTP API shim (no compiled packages needed) ----
+# Turso exposes a plain HTTPS endpoint — we talk to it with requests.
 
 class _TursoRow(dict):
     """Dict-based row so callers can use row['col'] just like sqlite3.Row."""
 
 
 class _TursoCursor:
-    def __init__(self, cursor):
-        self._cur = cursor
-        self._desc = getattr(cursor, "description", None)
-
-    @property
-    def rowcount(self):
-        return getattr(self._cur, "rowcount", -1)
-
-    def _to_row(self, raw):
-        if raw is None:
-            return None
-        if self._desc:
-            return _TursoRow(zip([d[0] for d in self._desc], raw))
-        return _TursoRow(enumerate(raw))
+    def __init__(self, cols, rows, rowcount=-1):
+        self._cols = cols
+        self._rows = rows
+        self.rowcount = rowcount
+        self._idx = 0
 
     def fetchall(self):
-        return [self._to_row(r) for r in self._cur.fetchall()]
+        return [_TursoRow(zip(self._cols, r)) for r in self._rows]
 
     def fetchone(self):
-        return self._to_row(self._cur.fetchone())
+        if self._idx < len(self._rows):
+            row = _TursoRow(zip(self._cols, self._rows[self._idx]))
+            self._idx += 1
+            return row
+        return None
 
 
 class _TursoConn:
-    """Wraps libsql_experimental so it behaves like sqlite3.Connection."""
+    """Talks to Turso via its HTTPS pipeline API — pure Python, no Rust."""
 
-    def __init__(self, conn):
-        self._conn = conn
+    def __init__(self, url: str, token: str):
+        import requests as _req
+        # Convert libsql:// → https://
+        self._http_url = url.replace("libsql://", "https://") + "/v2/pipeline"
+        self._token = token
+        self._req = _req
+        self._pending: list = []   # buffered statements for commit
 
-    def execute(self, sql, params=()):
-        cur = self._conn.execute(sql, params)
-        return _TursoCursor(cur)
+    def _send(self, statements: list) -> list:
+        """POST a pipeline of statements, return list of result objects."""
+        payload = {"requests": [
+            {"type": "execute", "stmt": {"sql": sql, "args": [
+                {"type": "text", "value": str(a)} if isinstance(a, str)
+                else {"type": "integer", "value": str(int(a))} if isinstance(a, int)
+                else {"type": "float", "value": str(float(a))} if isinstance(a, float)
+                else {"type": "null"} if a is None
+                else {"type": "text", "value": str(a)}
+                for a in args
+            ]}}
+            for sql, args in statements
+        ] + [{"type": "close"}]}
+        r = self._req.post(
+            self._http_url,
+            json=payload,
+            headers={"Authorization": f"Bearer {self._token}"},
+            timeout=30,
+        )
+        r.raise_for_status()
+        return r.json().get("results", [])
 
-    def executemany(self, sql, data):
-        cur = self._conn.executemany(sql, data)
-        return _TursoCursor(cur)
+    def execute(self, sql: str, params=()):
+        results = self._send([(sql, list(params))])
+        res = results[0] if results else {}
+        if res.get("type") == "error":
+            raise Exception(res.get("error", {}).get("message", "Turso error"))
+        inner = res.get("response", {}).get("result", {})
+        cols = [c["name"] for c in inner.get("cols", [])]
+        rows = [[v.get("value") for v in r] for r in inner.get("rows", [])]
+        affected = inner.get("affected_row_count", -1)
+        return _TursoCursor(cols, rows, rowcount=affected)
 
-    def executescript(self, script):
-        """Split the script into individual statements and execute each."""
-        clean = re.sub(r"--[^\n]*", "", script)   # strip -- comments
+    def executemany(self, sql: str, data):
+        data = list(data)
+        if not data:
+            return _TursoCursor([], [], rowcount=0)
+        results = self._send([(sql, list(row)) for row in data])
+        affected = sum(
+            r.get("response", {}).get("result", {}).get("affected_row_count", 0)
+            for r in results if r.get("type") != "error"
+        )
+        return _TursoCursor([], [], rowcount=affected)
+
+    def executescript(self, script: str):
+        clean = re.sub(r"--[^\n]*", "", script)
         stmts = [s.strip() for s in clean.split(";") if s.strip()]
         for stmt in stmts:
             try:
-                self._conn.execute(stmt)
+                self._send([(stmt, [])])
             except Exception as e:
                 logger.warning("executescript warning: %s | %.80s", e, stmt)
-        self._conn.commit()
 
     def commit(self):
-        self._conn.commit()
+        pass   # each _send is auto-committed by Turso
 
     def rollback(self):
-        try:
-            self._conn.rollback()
-        except Exception:
-            pass
+        pass   # no transaction buffering in HTTP mode
 
     def close(self):
-        self._conn.close()
+        pass
 
 
 def to_iso_date(raw: str) -> str:
@@ -110,8 +139,7 @@ logger = logging.getLogger(__name__)
 
 def get_connection():
     if USE_TURSO:
-        conn = libsql.connect(TURSO_URL, auth_token=TURSO_TOKEN)
-        return _TursoConn(conn)
+        return _TursoConn(TURSO_URL, TURSO_TOKEN)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
