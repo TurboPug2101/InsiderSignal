@@ -1829,12 +1829,8 @@ function renderShareholdingChart(data) {
 }
 
 // ===== PROGRESS MODAL (Run Analysis) =====
+// Worker handles streaks, clusters, fundamentals only (scrapers run locally via run.py)
 const ANALYSIS_STEPS = [
-  {id:'fii_dii',      name:'FII/DII Activity'},
-  {id:'bulk_block',   name:'Bulk/Block Deals'},
-  {id:'insider',      name:'Insider Trading'},
-  {id:'sast',         name:'SAST Regulation 29'},
-  {id:'mf_portfolios',name:'MF Portfolios/Shareholding'},
   {id:'streaks',      name:'Promoter Streak Detection'},
   {id:'clusters',     name:'Signal Cluster Computation'},
   {id:'fundamentals', name:'Fundamentals Enrichment'},
@@ -1846,6 +1842,7 @@ function openRunAnalysis() {
   document.getElementById('progress-bar').style.width = '0%';
   document.getElementById('progress-close-btn').classList.remove('active');
 
+  // Show all steps as pending
   stepsEl.innerHTML = ANALYSIS_STEPS.map(s =>
     `<div class="progress-step" id="pstep-${s.id}">
       <div class="step-icon" id="picon-${s.id}">⬜</div>
@@ -1857,42 +1854,56 @@ function openRunAnalysis() {
 
   modal.classList.add('open');
 
-  fetch('/api/run-analysis', {method:'POST'}).then(async resp => {
+  // Mark all as running while we wait (worker runs them sequentially server-side)
+  ANALYSIS_STEPS.forEach(s => {
+    const icon = document.getElementById('picon-' + s.id);
+    if (icon) { icon.textContent = '⟳'; icon.classList.add('spin'); }
+  });
+
+  fetch('/api/run-analysis', { method: 'POST' }).then(async resp => {
     if (!resp.ok) {
       const txt = await resp.text();
-      document.getElementById('progress-steps').insertAdjacentHTML('beforeend',
-        `<div style="color:#DC2626;padding:10px 0;font-size:13px">Server error ${resp.status}: ${txt.slice(0,120)}</div>`);
+      ANALYSIS_STEPS.forEach(s => {
+        const icon = document.getElementById('picon-' + s.id);
+        if (icon) { icon.textContent = '✗'; icon.classList.remove('spin'); }
+      });
+      stepsEl.insertAdjacentHTML('beforeend',
+        `<div style="color:#DC2626;padding:10px 0;font-size:13px">Worker error ${resp.status}: ${txt.slice(0,200)}</div>`);
       document.getElementById('progress-close-btn').classList.add('active');
       return;
     }
-    const reader = resp.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    let doneCount = 0;
 
-    while(true) {
-      const {value, done} = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, {stream:true});
-      const parts = buf.split('\n\n');
-      buf = parts.pop() || '';
-      for (const part of parts) {
-        const line = part.trim();
-        if (!line.startsWith('data:')) continue;
-        try {
-          const ev = JSON.parse(line.slice(5).trim());
-          handleAnalysisEvent(ev);
-          if (ev.status === 'done' && ev.step !== 'complete') doneCount++;
-          const pct = Math.round(doneCount / ANALYSIS_STEPS.length * 100);
-          document.getElementById('progress-bar').style.width = pct + '%';
-        } catch(e) { /* skip malformed line */ }
-      }
-    }
-    // Ensure close button is enabled even if complete event was missed
+    const data = await resp.json();
+
+    // Mark completed steps from the response
+    (data.steps || []).forEach(step => {
+      const icon = document.getElementById('picon-' + step.step);
+      const countEl = document.getElementById('pcount-' + step.step);
+      const elapsedEl = document.getElementById('pelapsed-' + step.step);
+      if (icon) { icon.textContent = '✓'; icon.classList.remove('spin'); icon.style.color = '#16A34A'; }
+      if (countEl) { countEl.textContent = step.count + ' rows'; countEl.style.display = ''; }
+      if (elapsedEl) { elapsedEl.textContent = (step.elapsed_ms / 1000).toFixed(1) + 's'; }
+    });
+
+    // Mark errored steps
+    (data.errors || []).forEach(err => {
+      const icon = document.getElementById('picon-' + err.step);
+      if (icon) { icon.textContent = '✗'; icon.classList.remove('spin'); icon.style.color = '#DC2626'; }
+    });
+
+    const pct = data.steps ? Math.round(data.steps.length / ANALYSIS_STEPS.length * 100) : 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
     document.getElementById('progress-close-btn').classList.add('active');
+
+    if (data.status === 'done') loadDashboard();
+
   }).catch(e => {
-    document.getElementById('progress-steps').insertAdjacentHTML('beforeend',
-      `<div style="color:#DC2626;padding:10px 0;font-size:13px">Connection error: ${e.message}. Is the server running on port 8000?</div>`);
+    ANALYSIS_STEPS.forEach(s => {
+      const icon = document.getElementById('picon-' + s.id);
+      if (icon) { icon.textContent = '✗'; icon.classList.remove('spin'); }
+    });
+    stepsEl.insertAdjacentHTML('beforeend',
+      `<div style="color:#DC2626;padding:10px 0;font-size:13px">Connection error: ${e.message}</div>`);
     document.getElementById('progress-close-btn').classList.add('active');
   });
 }

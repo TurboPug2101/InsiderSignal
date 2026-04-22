@@ -2,16 +2,13 @@
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from typing import Optional, List
 from collections import defaultdict
 from datetime import datetime, timedelta
-import asyncio
 import feedparser
-import json
 import logging
 import os
-import time as time_module
 
 from db import query, init_db, get_connection
 from config import DB_PATH, GROQ_API_KEY
@@ -601,88 +598,35 @@ def get_stock_intelligence(
     return query(sql, tuple(params))
 
 
-# ---------- Run Analysis (SSE streaming endpoint) ----------
-
-def _run_step_sync(step_id: str) -> int:
-    """Execute one pipeline step synchronously. Returns record count."""
-    count = 0
-    if step_id == "fii_dii":
-        from scrapers.fii_dii import run as run_fii
-        count = run_fii() or 0
-    elif step_id == "bulk_block":
-        from scrapers.bulk_block_deals import run as run_bulk
-        count = run_bulk() or 0
-    elif step_id == "insider":
-        from scrapers.insider_trading import run as run_insider
-        count = run_insider() or 0
-    elif step_id == "sast":
-        from scrapers.sast_regulation29 import run as run_sast
-        count = run_sast() or 0
-    elif step_id == "mf_portfolios":
-        from scrapers.mf_portfolios import run as run_mf
-        count = run_mf() or 0
-    elif step_id == "streaks":
-        from smart_money.cluster_detector import refresh_streak_table
-        count = refresh_streak_table()
-    elif step_id == "clusters":
-        from smart_money.cluster_detector import refresh_cluster_table
-        count = refresh_cluster_table()
-    elif step_id == "fundamentals":
-        from scrapers.screener_fundamentals import refresh_fundamentals, get_symbols_needing_fundamentals
-        syms = get_symbols_needing_fundamentals()
-        count = refresh_fundamentals(symbols=syms)
-    return count
-
+# ---------- Recompute (proxies to worker service) ----------
 
 @app.post("/api/run-analysis")
-async def run_analysis():
+def run_analysis():
     """
-    Run full analysis pipeline: scrape → streaks → clusters → fundamentals.
-    Streams progress via Server-Sent Events so the browser sees each step live.
-
-    Each scraper is blocking (network + DB), so we offload to a thread executor
-    to keep the async event loop free to flush the stream between steps.
+    Trigger recomputation (streaks, clusters, fundamentals) on the worker service.
+    The worker owns this computation; the dashboard just forwards the request.
     """
-    async def generate():
-        steps = [
-            ("fii_dii",       "FII/DII Activity"),
-            ("bulk_block",    "Bulk/Block Deals"),
-            ("insider",       "Insider Trading"),
-            ("sast",          "SAST Regulation 29"),
-            ("mf_portfolios", "MF Portfolios/Shareholding"),
-            ("streaks",       "Promoter Streak Detection"),
-            ("clusters",      "Signal Cluster Computation"),
-            ("fundamentals",  "Fundamentals Enrichment"),
-        ]
+    import requests as _req
+    worker_url = os.environ.get("WORKER_URL", "").rstrip("/")
+    worker_secret = os.environ.get("WORKER_SECRET", "")
 
-        loop = asyncio.get_event_loop()
-        overall_start = time_module.time()
+    if not worker_url:
+        raise HTTPException(status_code=503, detail="Worker service not configured (WORKER_URL not set)")
 
-        for step_id, step_name in steps:
-            step_start = time_module.time()
-            # Send "running" event and yield control so uvicorn flushes it immediately
-            yield f"data: {json.dumps({'step': step_id, 'name': step_name, 'status': 'running', 'elapsed_ms': 0})}\n\n"
-            await asyncio.sleep(0)   # let the event loop flush the buffer
-
-            try:
-                # Run blocking scraper in a thread pool so the event loop stays free
-                count = await loop.run_in_executor(None, _run_step_sync, step_id)
-                elapsed = int((time_module.time() - step_start) * 1000)
-                yield f"data: {json.dumps({'step': step_id, 'name': step_name, 'status': 'done', 'count': count, 'elapsed_ms': elapsed})}\n\n"
-                await asyncio.sleep(0)
-            except Exception as e:
-                elapsed = int((time_module.time() - step_start) * 1000)
-                yield f"data: {json.dumps({'step': step_id, 'name': step_name, 'status': 'error', 'error': str(e), 'elapsed_ms': elapsed})}\n\n"
-                await asyncio.sleep(0)
-
-        total = int((time_module.time() - overall_start) * 1000)
-        yield f"data: {json.dumps({'step': 'complete', 'name': 'All Done', 'status': 'done', 'total_elapsed_ms': total})}\n\n"
-
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    try:
+        resp = _req.post(
+            f"{worker_url}/recompute",
+            headers={"X-Worker-Secret": worker_secret},
+            timeout=600,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except _req.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Worker service unreachable")
+    except _req.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Worker timed out")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 # ---------- Static dashboard ----------

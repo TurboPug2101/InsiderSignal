@@ -1,4 +1,5 @@
 services:
+  # ── Service 1: Dashboard ─────────────────────────────────────────────────
   - type: web
     name: smart-money-tracker
     runtime: python
@@ -12,4 +13,28 @@ services:
       - key: TURSO_DATABASE_URL
         sync: false
       - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: WORKER_URL
+        sync: false          # Set to https://smart-money-worker.onrender.com after deploying worker
+      - key: WORKER_SECRET
+        sync: false          # Must match the worker's WORKER_SECRET
+      - key: SENTRY_DSN
+        sync: false
+
+  # ── Service 2: Worker ────────────────────────────────────────────────────
+  - type: web
+    name: smart-money-worker
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r worker/requirements.txt
+    startCommand: uvicorn worker.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: WORKER_SECRET
+        sync: false          # Shared secret — dashboard sends this, worker verifies it
+      - key: SENTRY_DSN
         sync: false
