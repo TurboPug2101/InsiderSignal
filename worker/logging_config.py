@@ -25,7 +25,6 @@ def configure_logging(service_name: str = "worker", level: str = "INFO"):
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.stdlib.add_logger_name,
             structlog.processors.StackInfoRenderer(),
             structlog.processors.JSONRenderer(),
         ],
