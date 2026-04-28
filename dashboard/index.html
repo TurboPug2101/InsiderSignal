@@ -444,7 +444,6 @@ th[data-tip]:last-child:hover::after{left:auto;right:0;transform:none}
     <div class="header-right">
       <span id="last-updated">—</span>
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
-      <button id="theme-toggle-btn" class="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
       <button class="refresh-btn" style="background:#7C3AED;" onclick="openRunAnalysis()">▶ Run Analysis</button>
     </div>
   </div>
@@ -954,7 +953,12 @@ function openFilter(tableId, col, type, btn, e) {
     html = `<input type="date" id="fi-from" value="${fv.from||''}"/>
             <input type="date" id="fi-to"   value="${fv.to||''}"/>`;
   } else if (type === 'category') {
-    const vals = [...new Set(st.data.map(r => String(r[col]||'')))].filter(Boolean).sort();
+    const FIXED_CATS = {
+      signal_type: ['INSIDER_BUY','SAST_ACCUMULATION','BULK_BLOCK_DEAL']
+    };
+    const dataVals = st.data.map(r => String(r[col]||''));
+    const merged = [...dataVals, ...(FIXED_CATS[col] || [])];
+    const vals = [...new Set(merged)].filter(Boolean).sort();
     const checked = fv.values || [];
     html = vals.map(v => `<label><input type="checkbox" value="${v}" ${checked.includes(v)?'checked':''}/>${v}</label>`).join('');
   }

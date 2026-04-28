@@ -606,6 +606,7 @@ def run_analysis():
     Trigger recomputation (streaks, clusters, fundamentals) on the worker service.
     The worker owns this computation; the dashboard just forwards the request.
     """
+    import time
     import requests as _req
     worker_url = os.environ.get("WORKER_URL", "").rstrip("/")
     worker_secret = os.environ.get("WORKER_SECRET", "")
@@ -613,20 +614,41 @@ def run_analysis():
     if not worker_url:
         raise HTTPException(status_code=503, detail="Worker service not configured (WORKER_URL not set)")
 
-    try:
-        resp = _req.post(
-            f"{worker_url}/recompute",
-            headers={"X-Worker-Secret": worker_secret},
-            timeout=600,
-        )
-        resp.raise_for_status()
-        return resp.json()
-    except _req.exceptions.ConnectionError:
-        raise HTTPException(status_code=503, detail="Worker service unreachable")
-    except _req.exceptions.Timeout:
-        raise HTTPException(status_code=504, detail="Worker timed out")
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    # Render free-tier workers spin down when idle and return 502/503 while
+    # cold-starting. Retry a few times with backoff so the button "just works"
+    # even if the worker was asleep.
+    cold_start_codes = {502, 503, 504}
+    max_attempts = 6
+    backoff_seconds = 5
+
+    last_error_detail = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = _req.post(
+                f"{worker_url}/recompute",
+                headers={"X-Worker-Secret": worker_secret},
+                timeout=600,
+            )
+            if resp.status_code in cold_start_codes and attempt < max_attempts:
+                last_error_detail = f"{resp.status_code} from worker (likely cold start)"
+                time.sleep(backoff_seconds)
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        except _req.exceptions.ConnectionError as e:
+            last_error_detail = f"connection error: {e}"
+            if attempt < max_attempts:
+                time.sleep(backoff_seconds)
+                continue
+            raise HTTPException(status_code=503, detail="Worker service unreachable")
+        except _req.exceptions.Timeout:
+            raise HTTPException(status_code=504, detail="Worker timed out")
+        except _req.exceptions.HTTPError as e:
+            raise HTTPException(status_code=502, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=str(e))
+
+    raise HTTPException(status_code=502, detail=f"Worker still unavailable after {max_attempts} attempts: {last_error_detail}")
 
 
 # ---------- Static dashboard ----------
