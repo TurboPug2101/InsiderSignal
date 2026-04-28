@@ -322,6 +322,9 @@ td.wrap{white-space:normal}
 .progress-close-btn{background:#22C55E;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;opacity:.5}
 .progress-close-btn.active{opacity:1}
 .progress-close-btn.active:hover{background:#16A34A}
+.progress-cancel-btn{background:#DC2626;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;margin-right:8px}
+.progress-cancel-btn:hover{background:#B91C1C}
+.progress-cancel-btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* Red flags tooltip */
 .flags-pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#FEE2E2;color:#DC2626;cursor:pointer}
@@ -638,6 +641,7 @@ th[data-tip]:last-child:hover::after{left:auto;right:0;transform:none}
     <div id="progress-steps"></div>
     <div class="progress-footer">
       <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+      <button class="progress-cancel-btn" id="progress-cancel-btn" onclick="cancelRunAnalysis()" title="Stop waiting for the worker. Note: the worker will keep running its current job server-side.">Cancel</button>
       <button class="progress-close-btn" id="progress-close-btn" onclick="closeProgressModal()">Done</button>
     </div>
   </div>
@@ -1840,11 +1844,16 @@ const ANALYSIS_STEPS = [
   {id:'fundamentals', name:'Fundamentals Enrichment'},
 ];
 
+let analysisAbortController = null;
+
 function openRunAnalysis() {
   const modal = document.getElementById('progress-modal');
   const stepsEl = document.getElementById('progress-steps');
   document.getElementById('progress-bar').style.width = '0%';
   document.getElementById('progress-close-btn').classList.remove('active');
+  const cancelBtn = document.getElementById('progress-cancel-btn');
+  cancelBtn.disabled = false;
+  cancelBtn.style.display = '';
 
   // Show all steps as pending
   stepsEl.innerHTML = ANALYSIS_STEPS.map(s =>
@@ -1864,7 +1873,8 @@ function openRunAnalysis() {
     if (icon) { icon.textContent = '⟳'; icon.classList.add('spin'); }
   });
 
-  fetch('/api/run-analysis', { method: 'POST' }).then(async resp => {
+  analysisAbortController = new AbortController();
+  fetch('/api/run-analysis', { method: 'POST', signal: analysisAbortController.signal }).then(async resp => {
     if (!resp.ok) {
       const txt = await resp.text();
       ANALYSIS_STEPS.forEach(s => {
@@ -1873,6 +1883,7 @@ function openRunAnalysis() {
       });
       stepsEl.insertAdjacentHTML('beforeend',
         `<div style="color:#DC2626;padding:10px 0;font-size:13px">Worker error ${resp.status}: ${txt.slice(0,200)}</div>`);
+      document.getElementById('progress-cancel-btn').style.display = 'none';
       document.getElementById('progress-close-btn').classList.add('active');
       return;
     }
@@ -1897,19 +1908,30 @@ function openRunAnalysis() {
 
     const pct = data.steps ? Math.round(data.steps.length / ANALYSIS_STEPS.length * 100) : 100;
     document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-cancel-btn').style.display = 'none';
     document.getElementById('progress-close-btn').classList.add('active');
 
     if (data.status === 'done') loadDashboard();
 
   }).catch(e => {
+    if (e.name === 'AbortError') return; // user cancelled — UI already cleaned up
     ANALYSIS_STEPS.forEach(s => {
       const icon = document.getElementById('picon-' + s.id);
       if (icon) { icon.textContent = '✗'; icon.classList.remove('spin'); }
     });
     stepsEl.insertAdjacentHTML('beforeend',
       `<div style="color:#DC2626;padding:10px 0;font-size:13px">Connection error: ${e.message}</div>`);
+    document.getElementById('progress-cancel-btn').style.display = 'none';
     document.getElementById('progress-close-btn').classList.add('active');
   });
+}
+
+function cancelRunAnalysis() {
+  if (analysisAbortController) {
+    analysisAbortController.abort();
+    analysisAbortController = null;
+  }
+  document.getElementById('progress-modal').classList.remove('open');
 }
 
 function handleAnalysisEvent(ev) {
