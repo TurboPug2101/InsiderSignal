@@ -397,7 +397,7 @@ Every stock with recent signals (last 30 days) gets scored:
 
 | Event Type | Weight | Notes |
 |------------|--------|-------|
-| Insider buy by Promoter/Promoter Group | 30 per occurrence | Highest weight — direct skin in the game |
+| Insider buy by Promoter/Promoter Group | 30 per occurrence | Highest weight |
 | Insider buy by Director/KMP | 15 per occurrence | Still meaningful |
 | SAST acquisition (holding increased) | 25 per occurrence | Big acquirer building position |
 | Block deal BUY | 20 per occurrence | Large institutional buy in special window |

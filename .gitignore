@@ -2,6 +2,8 @@
 .code-review-graph/
 .env
 challenges.md
+technical_architecture.md
+microservice.md
 new_req.md
 # db
 *.db
